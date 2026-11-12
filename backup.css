@@ -1,0 +1,56 @@
+.backup-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid #eeedf4;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.backup-panel p {
+  margin: 0;
+  color: #858494;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.backup-buttons {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.backup-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--purple);
+  border-radius: 8px;
+  background: var(--purple);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.backup-button:hover { background: var(--purple-dark); }
+
+.backup-button-secondary {
+  border-color: #e5e2f5;
+  background: #fff;
+  color: #6f668f;
+}
+
+.backup-button-secondary:hover {
+  border-color: #c9c2f5;
+  background: #faf9ff;
+  color: var(--purple-dark);
+}
+
+@media (max-width: 520px) {
+  .backup-panel { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .backup-buttons { width: 100%; }
+  .backup-button { flex: 1; }
+}
