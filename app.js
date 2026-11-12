@@ -26,10 +26,12 @@ function loadTasks() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((task) => task && typeof task.id === "string" && typeof task.title === "string" && typeof task.completed === "boolean" && categories[task.category]).map((task) => ({
-      ...task,
-      details: Array.isArray(task.details) ? task.details.filter((detail) => detail && ["text", "image", "table"].includes(detail.type)) : [],
-    }));
+    return parsed
+      .filter((task) => task && typeof task.id === "string" && typeof task.title === "string" && typeof task.completed === "boolean" && categories[task.category])
+      .map((task) => ({
+        ...task,
+        details: Array.isArray(task.details) ? task.details.filter((detail) => detail && ["text", "image", "table"].includes(detail.type)) : [],
+      }));
   } catch {
     return [];
   }
@@ -38,14 +40,16 @@ function loadTasks() {
 function saveTasks() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    return true;
   } catch {
-    // Keep the task usable for this page session if browser storage is unavailable/full.
+    alert("浏览器存储空间不足，请删除一些图片或清理空间后重试。");
+    return false;
   }
 }
 
 function updateTask(id, updater) {
   tasks = tasks.map((task) => task.id === id ? updater(task) : task);
-  saveTasks();
+  return saveTasks();
 }
 
 function createButton(className, label, text, onClick) {
@@ -104,11 +108,29 @@ function renderDetail(task, detail, detailIndex) {
     textarea.placeholder = "写下补充说明、链接或灵感…";
     textarea.value = detail.text || "";
     textarea.setAttribute("aria-label", "任务文字备注");
-    textarea.addEventListener("input", () => updateTask(task.id, (item) => ({
-      ...item,
-      details: item.details.map((part, index) => index === detailIndex ? { ...part, text: textarea.value } : part),
-    })));
-    block.append(textarea);
+    textarea.addEventListener("input", () => {
+      updateTask(task.id, (item) => ({
+        ...item,
+        details: item.details.map((part, index) => index === detailIndex ? { ...part, text: textarea.value } : part),
+      }));
+      saveHint.textContent = "内容已自动保存；编辑完成后可点下方按钮收起。";
+    });
+
+    const saveHint = document.createElement("p");
+    saveHint.className = "detail-save-hint";
+    saveHint.textContent = "编辑完成后，点“保存并收起”结束编辑。";
+    const actions = document.createElement("div");
+    actions.className = "detail-save-actions";
+    actions.append(createButton("detail-save-button", "保存文字备注并收起详情", "保存并收起", () => {
+      const saved = updateTask(task.id, (item) => ({
+        ...item,
+        details: item.details.map((part, index) => index === detailIndex ? { ...part, text: textarea.value } : part),
+      }));
+      if (!saved) return;
+      expandedTasks.delete(task.id);
+      render();
+    }));
+    block.append(textarea, saveHint, actions);
   } else if (detail.type === "image") {
     if (detail.src) {
       const image = document.createElement("img");
@@ -199,13 +221,13 @@ function renderTask(task) {
   const badge = document.createElement("span");
   badge.className = `category-badge ${categories[task.category].className}`;
   badge.textContent = categories[task.category].label;
-  const open = expandedTasks.has(task.id);
-  const toggle = createButton(`detail-toggle${open ? " is-open" : ""}`, open ? "收起补充内容" : "展开补充内容", `▾ ${task.details.length ? `补充内容 ${task.details.length}` : "补充内容"}`, () => {
+  const isOpen = expandedTasks.has(task.id);
+  const toggle = createButton(`detail-toggle${isOpen ? " is-open" : ""}`, isOpen ? "收起补充内容" : "展开补充内容", `▾ ${task.details.length ? `补充内容 ${task.details.length}` : "补充内容"}`, () => {
     if (expandedTasks.has(task.id)) expandedTasks.delete(task.id);
     else expandedTasks.add(task.id);
     render();
   });
-  toggle.setAttribute("aria-expanded", String(open));
+  toggle.setAttribute("aria-expanded", String(isOpen));
   const remove = createButton("delete-button", `删除任务：${task.title}`, "×", () => {
     tasks = tasks.filter((entry) => entry.id !== task.id);
     expandedTasks.delete(task.id);
@@ -215,7 +237,7 @@ function renderTask(task) {
   main.append(checkbox, title, badge, toggle, remove);
   item.append(main);
 
-  if (open) {
+  if (isOpen) {
     const panel = document.createElement("div");
     panel.className = "task-details";
     const toolbar = document.createElement("div");
